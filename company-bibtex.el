@@ -136,7 +136,7 @@ COMMAND, ARG, and IGNORED are used by `company-mode'."
 		     (company-grab company-bibtex-latex-citation-regex)
 		     (company-grab company-bibtex-org-citation-regex))))
     (candidates
-     (remove-if-not
+     (cl-remove-if-not
       (lambda (c) (string-prefix-p arg c))
       (company-bibtex-candidates arg)))
     (duplicates t)))
