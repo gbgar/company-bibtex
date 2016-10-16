@@ -4,7 +4,7 @@
 
 ;; Author: GB Gardner <gbgar@users.noreply.github.com>
 ;; Version: 1.0
-;; Package-Requires: ((cl-lib "1.0") (parsebib "1.0"))
+;; Package-Requires: ((company "0.9.0") (cl-lib "0.5") (parsebib "1.0"))
 ;; Keywords: company-mode, bibtex
 ;; URL: https://github.com/gbgar/company-bibtex
 
@@ -58,6 +58,8 @@
 ;;;
 
 ;;; Code:
+
+(require 'company)
 (require 'cl-lib)
 (require 'parsebib)
 
