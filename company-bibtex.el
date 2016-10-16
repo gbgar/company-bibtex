@@ -4,7 +4,7 @@
 
 ;; Author: GB Gardner <gbgar@users.noreply.github.com>
 ;; Version: 1.0
-;; Package-Requires: ((cl-lib "1.0") (parsebib "1.0"))
+;; Package-Requires: ((company "0.9.0") (cl-lib "0.5") (parsebib "1.0"))
 ;; Keywords: company-mode, bibtex
 ;; URL: https://github.com/gbgar/company-bibtex
 
@@ -58,6 +58,8 @@
 ;;;
 
 ;;; Code:
+
+(require 'company)
 (require 'cl-lib)
 (require 'parsebib)
 
@@ -113,9 +115,9 @@ appeared in the BibTeX files."
    for entry-type = (parsebib-find-next-item)
    while entry-type
    unless (member-ignore-case entry-type '("preamble" "string" "comment"))
-   collect (-map (lambda (it)
-		   (cons (downcase (car it)) (cdr it)))
-		 (parsebib-read-entry entry-type))))
+   collect (mapcar (lambda (it)
+		     (cons (downcase (car it)) (cdr it)))
+		   (parsebib-read-entry entry-type))))
 
 ;;;###autoload
 (defun company-bibtex (command &optional arg &rest ignored)
@@ -136,7 +138,7 @@ COMMAND, ARG, and IGNORED are used by `company-mode'."
 		     (company-grab company-bibtex-latex-citation-regex)
 		     (company-grab company-bibtex-org-citation-regex))))
     (candidates
-     (remove-if-not
+     (cl-remove-if-not
       (lambda (c) (string-prefix-p arg c))
       (company-bibtex-candidates arg)))
     (duplicates t)))
