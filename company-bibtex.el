@@ -1,5 +1,62 @@
 ;;; company-bibtex.el --- Company completion for bibtex keys
+
+;; Copyright (C) 2016 GB Gardner
+
+;; Author: GB Gardner <gbgar@users.noreply.github.com>
+;; Version: 1.0
+;; Package-Requires: ((cl-lib "1.0") (parsebib "1.0"))
+;; Keywords: company-mode, bibtex
+;; URL: https://github.com/gbgar/company-bibtex
+
+;; Redistribution and use in source and binary forms, with or without
+;; modification, are permitted provided that the following conditions
+;; are met:
+;;
+;; 1. Redistributions of source code must retain the above copyright
+;;    notice, this list of conditions and the following disclaimer.
+;; 2. Redistributions in binary form must reproduce the above copyright
+;;    notice, this list of conditions and the following disclaimer in the
+;;    documentation and/or other materials provided with the distribution.
+;; 3. The name of the author may not be used to endorse or promote products
+;;    derived from this software without specific prior written permission.
+;;
+;; THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+;; IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+;; OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+;; IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+;; INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+;; NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES ; LOSS OF USE,
+;; DATA, OR PROFITS ; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+;; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+;; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+;; THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 ;;; Commentary:
+;;; `company-bibtex' provides a backend for the
+;;; company-mode framework, enabling completion of bibtex keys in
+;;; modes used for prose writing.  This backend activates for citation
+;;; styles used by `pandoc-mode' (@), `latex-mode' (\cite{}), and
+;;; `org-mode' (ebib:).
+;;;
+;;; Load the package and add it to the company-backends:
+;;;
+;;;  (require 'company-bibtex)
+;;;  (add-to-list 'company-backends 'company-bibtex)
+;;;
+;;; `company-bibtex' reads from a bibliography file or files
+;;; specified in `company-bibtex-bibliography'.  For example:
+;;;
+;;;   (setq company-bibtex-bibliography
+;;;    '("/home/cooluser/thesis/thesis1.bib"
+;;;      "/home/cooluser/thesis/thesi2.bib"))
+;;;
+;;; The regular expression matching key names alphanumeric characters,
+;;; dashes (-), and underscores (_).  This is customizable via
+;;; `company-bibtex-key-regex'.  For example:
+;;;
+;;;  (setq company-bibtex-key-regex "[[:alnum:]+_]*")
+;;;
+
 ;;; Code:
 (require 'cl-lib)
 (require 'parsebib)
@@ -61,7 +118,7 @@ appeared in the BibTeX files."
 		 (parsebib-read-entry entry-type))))
 
 ;;;###autoload
-(defun company-bibtex-backend (command &optional arg &rest ignored)
+(defun company-bibtex (command &optional arg &rest ignored)
   "`company-mode' completion backend for bibtex key completion.
 
 This backend activates for citation styles used by `pandoc-mode' (@),
@@ -71,7 +128,7 @@ COMMAND, ARG, and IGNORED are used by `company-mode'."
 
   (interactive (list 'interactive))
   (cl-case command
-    (interactive (company-begin-backend 'company-bibtex-backend))
+    (interactive (company-begin-backend 'company-bibtex))
     (prefix (and (or (derived-mode-p 'markdown-mode)
 		     (derived-mode-p 'latex-mode)
 		     (derived-mode-p 'org-mode))
