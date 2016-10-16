@@ -10,7 +10,7 @@ Load the package and add `company-bibtex` to `company-backends`:
 
 ```elisp
 (require 'company-bibtex)
-(add-to-list `company-backends `company-bibtex)
+(add-to-list 'company-backends 'company-bibtex)
 ```
 
 # Customization
@@ -20,7 +20,7 @@ specified in `company-bibtex-bibliography`:
 
 ```elisp
 (setq company-bibtex-bibliography
-	`("/home/cooluser/thesis/thesis1.bib"
+	'("/home/cooluser/thesis/thesis1.bib"
 	  "/home/cooluser/thesis/thesi2.bib"))
 ```
 The regular expression matching key names alphanumeric characters,
