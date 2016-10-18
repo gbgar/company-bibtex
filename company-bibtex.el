@@ -72,7 +72,7 @@
   "List of bibtex files used for gathering completions."
   :group 'company-bibtex
   :type '(choice (file :must-match t)
-		 (repeat (file :must-match t))))
+                 (repeat (file :must-match t))))
 
 (defcustom company-bibtex-key-regex "[[:alnum:]_-]*"
   "Regex matching bibtex key names, excluding mode-specific prefixes."
@@ -105,9 +105,9 @@ Prepend the appropriate part of PREFIX to each item."
                   prefix)
     (let ((prefixprefix (match-string-no-properties 1 prefix)))
       (progn (mapcar (function (lambda (l) (concat prefixprefix l)))
-		     (mapcar 'cdr
-			     (mapcar (function (lambda (x) (assoc "=key=" x)))
-				     (company-bibtex-parse-bibliography))))))))
+                     (mapcar 'cdr
+                             (mapcar (function (lambda (x) (assoc "=key=" x)))
+                                     (company-bibtex-parse-bibliography))))))))
 
 (defun company-bibtex-parse-bibliography ()
   "Parse BibTeX entries listed in the current buffer.
@@ -120,8 +120,8 @@ appeared in the BibTeX files."
    while entry-type
    unless (member-ignore-case entry-type '("preamble" "string" "comment"))
    collect (mapcar (lambda (it)
-		     (cons (downcase (car it)) (cdr it)))
-		   (parsebib-read-entry entry-type))))
+                     (cons (downcase (car it)) (cdr it)))
+                   (parsebib-read-entry entry-type))))
 
 ;;;###autoload
 (defun company-bibtex (command &optional arg &rest ignored)
