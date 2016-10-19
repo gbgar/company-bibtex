@@ -62,6 +62,7 @@
 (require 'company)
 (require 'cl-lib)
 (require 'parsebib)
+(require 'regexp-opt)
 
 (defgroup company-bibtex nil
   "Company backend for BibTeX bibliography keys."
@@ -71,23 +72,21 @@
   "List of bibtex files used for gathering completions."
   :group 'company-bibtex
   :type '(choice (file :must-match t)
-		 (repeat (file :must-match t))))
+                 (repeat (file :must-match t))))
 
 (defcustom company-bibtex-key-regex "[[:alnum:]_-]*"
   "Regex matching bibtex key names, excluding mode-specific prefixes."
   :group 'company-bibtex
   :type 'regexp)
 
-(defconst company-bibtex-pandoc-citation-regex
-  (concat "-?@" company-bibtex-key-regex)
+(defconst company-bibtex-pandoc-citation-regex "-?@"
   "Regex for pandoc citation prefix.")
 
 (defconst company-bibtex-latex-citation-regex
-  (concat "\\\\cite{" company-bibtex-key-regex)
+  (regexp-opt '("\cite{" "\citet{" "\citep{" "\citet*{" "\citep*{"))
   "Regex for latex citation prefix.")
 
-(defconst company-bibtex-org-citation-regex
-  (concat "ebib:" company-bibtex-key-regex)
+(defconst company-bibtex-org-citation-regex "ebib:"
   "Regex for org citation prefix.")
 
 (defun company-bibtex-candidates (prefix)
@@ -95,15 +94,20 @@
 Prepend the appropriate part of PREFIX to each item."
   (with-temp-buffer
     (mapc #'insert-file-contents
-	  (if (listp company-bibtex-bibliography)
-	      company-bibtex-bibliography
-	    (list company-bibtex-bibliography)))
-    (string-match "\\(-?@\\|\\\\cite{\\|ebib:\\)[-_[:alnum:]]*" prefix)
+          (if (listp company-bibtex-bibliography)
+              company-bibtex-bibliography
+            (list company-bibtex-bibliography)))
+    (string-match (format "\\(%s\\|%s\\|%s\\)%s"
+                          company-bibtex-org-citation-regex
+                          company-bibtex-latex-citation-regex
+                          company-bibtex-pandoc-citation-regex
+                          company-bibtex-key-regex)
+                  prefix)
     (let ((prefixprefix (match-string-no-properties 1 prefix)))
       (progn (mapcar (function (lambda (l) (concat prefixprefix l)))
-		     (mapcar 'cdr
-			     (mapcar (function (lambda (x) (assoc "=key=" x)))
-				     (company-bibtex-parse-bibliography))))))))
+                     (mapcar 'cdr
+                             (mapcar (function (lambda (x) (assoc "=key=" x)))
+                                     (company-bibtex-parse-bibliography))))))))
 
 (defun company-bibtex-parse-bibliography ()
   "Parse BibTeX entries listed in the current buffer.
@@ -116,8 +120,8 @@ appeared in the BibTeX files."
    while entry-type
    unless (member-ignore-case entry-type '("preamble" "string" "comment"))
    collect (mapcar (lambda (it)
-		     (cons (downcase (car it)) (cdr it)))
-		   (parsebib-read-entry entry-type))))
+                     (cons (downcase (car it)) (cdr it)))
+                   (parsebib-read-entry entry-type))))
 
 ;;;###autoload
 (defun company-bibtex (command &optional arg &rest ignored)
@@ -132,11 +136,14 @@ COMMAND, ARG, and IGNORED are used by `company-mode'."
   (cl-case command
     (interactive (company-begin-backend 'company-bibtex))
     (prefix (and (or (derived-mode-p 'markdown-mode)
-		     (derived-mode-p 'latex-mode)
-		     (derived-mode-p 'org-mode))
-		 (or (company-grab company-bibtex-pandoc-citation-regex)
-		     (company-grab company-bibtex-latex-citation-regex)
-		     (company-grab company-bibtex-org-citation-regex))))
+                     (derived-mode-p 'latex-mode)
+                     (derived-mode-p 'org-mode))
+                 (company-grab
+                  (format "\\(%s\\|%s\\|%s\\)%s"
+                          company-bibtex-org-citation-regex
+                          company-bibtex-latex-citation-regex
+                          company-bibtex-pandoc-citation-regex
+                          company-bibtex-key-regex))))
     (candidates
      (cl-remove-if-not
       (lambda (c) (string-prefix-p arg c))
