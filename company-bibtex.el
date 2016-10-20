@@ -105,9 +105,19 @@ Prepend the appropriate part of PREFIX to each item."
                   prefix)
     (let ((prefixprefix (match-string-no-properties 1 prefix)))
       (progn (mapcar (function (lambda (l) (concat prefixprefix l)))
-                     (mapcar 'cdr
-                             (mapcar (function (lambda (x) (assoc "=key=" x)))
-                                     (company-bibtex-parse-bibliography))))))))
+                     ;; (mapcar 'cdr
+                             (mapcar (function (lambda (x) (company-bibtex-build-candidate x)))
+                                     (company-bibtex-parse-bibliography)))))))
+;; )
+
+(defun company-bibtex-build-candidate (bibentry)
+"Build a string---the bibtex key---with author and title properties attached.
+This is drawn from BIBENTRY, an element in the list produced
+by `company-bibtex-parse-bibliography'."
+  (let ((bibkey (cdr (assoc "=key=" bibentry)))
+	(author (cdr (assoc "author" bibentry)))
+	(title (cdr (assoc "title" bibentry))))
+    (propertize bibkey :author author :title title)))
 
 (defun company-bibtex-parse-bibliography ()
   "Parse BibTeX entries listed in the current buffer.
@@ -122,6 +132,17 @@ appeared in the BibTeX files."
    collect (mapcar (lambda (it)
                      (cons (downcase (car it)) (cdr it)))
                    (parsebib-read-entry entry-type))))
+
+
+(defun company-bibtex-get-annotation (candidate)
+  "Get annotation from CANDIDATE."
+  (replace-regexp-in-string "{\\|}" ""
+			    (format " | %s" (get-text-property 1 :author candidate))))
+
+(defun company-bibtex-get-metadata (candidate)
+  "Get metadata from CANDIDATE."
+  (replace-regexp-in-string "{\\|}" ""
+			    (format "%s" (get-text-property 1 :title candidate))))
 
 ;;;###autoload
 (defun company-bibtex (command &optional arg &rest ignored)
@@ -143,11 +164,13 @@ COMMAND, ARG, and IGNORED are used by `company-mode'."
                           company-bibtex-org-citation-regex
                           company-bibtex-latex-citation-regex
                           company-bibtex-pandoc-citation-regex
-                          company-bibtex-key-regex))))
+                          company-bibtex-key-regex) 0 )))
     (candidates
      (cl-remove-if-not
       (lambda (c) (string-prefix-p arg c))
       (company-bibtex-candidates arg)))
+    (annotation (company-bibtex-get-annotation arg))
+    (meta (company-bibtex-get-metadata arg))
     (duplicates t)))
 
 (provide 'company-bibtex)
