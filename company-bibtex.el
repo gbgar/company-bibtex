@@ -92,15 +92,15 @@
 (defun company-bibtex-candidates (prefix)
   "Parse .bib file for candidates and return list of keys.
 Prepend the appropriate part of PREFIX to each item."
-  (with-temp-buffer
-    (mapc #'insert-file-contents
-          (if (listp company-bibtex-bibliography)
-              company-bibtex-bibliography
-            (list company-bibtex-bibliography)))
-    (let ((prefixprefix (company-bibtex-get-candidate-citation-style prefix)))
-      (progn (mapcar (function (lambda (l) (concat prefixprefix l)))
-                             (mapcar (function (lambda (x) (company-bibtex-build-candidate x)))
-                                     (company-bibtex-parse-bibliography)))))))
+  (let ((bib-paths (if (listp company-bibtex-bibliography)
+                      company-bibtex-bibliography
+                    (list company-bibtex-bibliography))))
+    (with-temp-buffer
+      (mapc #'insert-file-contents bib-paths)
+      (let ((prefixprefix (company-bibtex-get-candidate-citation-style prefix)))
+        (progn (mapcar (function (lambda (l) (concat prefixprefix l)))
+                       (mapcar (function (lambda (x) (company-bibtex-build-candidate x)))
+                               (company-bibtex-parse-bibliography))))))))
 
 (defun company-bibtex-get-candidate-citation-style (candidate)
   "Get prefix for CANDIDATE."
