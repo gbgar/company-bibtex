@@ -23,8 +23,8 @@ specified in `company-bibtex-bibliography`:
 	'("/home/cooluser/thesis/thesis1.bib"
 	  "/home/cooluser/thesis/thesi2.bib"))
 ```
-The regular expression matching key names alphanumeric characters,
-dashes (-), and underscores (_).  This is customizable via
+`company-bibtex-key-regex` is the regular expression for matching acceptable key names. Alphanumeric characters,
+dashes (-), and underscores (_) are acceptable by default:
 `company-bibtex-key-regex`:
 
 ```elisp
