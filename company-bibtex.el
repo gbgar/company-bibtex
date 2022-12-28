@@ -64,15 +64,38 @@
 (require 'parsebib)
 (require 'regexp-opt)
 
+(declare-function 'projectile-acquire-root "projectile.el")
+
 (defgroup company-bibtex nil
   "Company backend for BibTeX bibliography keys."
   :group 'company)
 
+(defcustom company-bibtex-default-bibliography
+  '("main.bib" "bibliography.bib" "sample.bib" "references.bib")
+  "List of bibtex files used for gathering completions by default.
+
+Each filename is the name relative to project root.  Project root detected using
+`projectile-acquire-root'"
+  :group 'company-bibtex
+  :type '(choice (file :must-match t) (repeat (file :must-match t))))
+
 (defcustom company-bibtex-bibliography nil
   "List of bibtex files used for gathering completions."
   :group 'company-bibtex
-  :type '(choice (file :must-match t)
-                 (repeat (file :must-match t))))
+  :type '(choice (file :must-match t) (repeat (file :must-match t))))
+
+(defun company-bibtex-bibliography ()
+  "Return list of the bibTeX files used for completion."
+  (or company-bibtex-bibliography
+      (let ((root
+             (if (bound-and-true-p projectile-mode)
+                 (projectile-acquire-root)
+               "")))
+        (cl-remove-if-not
+         'file-exists-p
+         (mapcar
+          (lambda (it) (concat root it))
+          company-bibtex-default-bibliography)))))
 
 (defcustom company-bibtex-key-regex "[[:alnum:]_-]*"
   "Regex matching bibtex key names, excluding mode-specific prefixes."
@@ -92,13 +115,15 @@
 (defun company-bibtex-candidates (prefix)
   "Parse .bib file for candidates and return list of keys.
 Prepend the appropriate part of PREFIX to each item."
-  (let ((bib-paths (if (listp company-bibtex-bibliography)
-                      company-bibtex-bibliography
-                    (list company-bibtex-bibliography))))
+  (let ((bib-paths
+         (if (listp (company-bibtex-bibliography))
+             (company-bibtex-bibliography)
+           (list (company-bibtex-bibliography)))))
     (with-temp-buffer
       (mapc #'insert-file-contents bib-paths)
-      (mapcar (function (lambda (x) (company-bibtex-build-candidate x)))
-              (company-bibtex-parse-bibliography)))))
+      (mapcar
+       (function (lambda (x) (company-bibtex-build-candidate x)))
+       (company-bibtex-parse-bibliography)))))
 
 ;; (defun company-bibtex-get-candidate-citation-style (candidate)
 ;;   "Get prefix for CANDIDATE."
@@ -107,16 +132,16 @@ Prepend the appropriate part of PREFIX to each item."
 ;;                           company-bibtex-latex-citation-regex
 ;;                           company-bibtex-pandoc-citation-regex
 ;;                           company-bibtex-key-regex)
-;; 		candidate)
+;;              candidate)
 ;;   (match-string 1 candidate))
 
 (defun company-bibtex-build-candidate (bibentry)
-"Build a string---the bibtex key---with author and title properties attached.
+  "Build a string---the bibtex key---with author and title properties attached.
 This is drawn from BIBENTRY, an element in the list produced
 by `company-bibtex-parse-bibliography'."
   (let ((bibkey (cdr (assoc "=key=" bibentry)))
-	(author (cdr (assoc "author" bibentry)))
-	(title (cdr (assoc "title" bibentry))))
+        (author (cdr (assoc "author" bibentry)))
+        (title (cdr (assoc "title" bibentry))))
     (propertize bibkey :author author :title title)))
 
 (defun company-bibtex-parse-bibliography ()
@@ -126,26 +151,30 @@ Return a list of entry keys in the order in which the entries
 appeared in the BibTeX files."
   (goto-char (point-min))
   (cl-loop
-   for entry-type = (parsebib-find-next-item)
+   for entry-type =
+   (parsebib-find-next-item)
    while entry-type
-   unless (member-ignore-case entry-type '("preamble" "string" "comment"))
-   collect (mapcar (lambda (it)
-                     (cons (downcase (car it)) (cdr it)))
-                   (parsebib-read-entry entry-type))))
+   unless
+   (member-ignore-case entry-type '("preamble" "string" "comment"))
+   collect
+   (mapcar
+    (lambda (it)
+      (cons (downcase (car it)) (cdr it)))
+    (parsebib-read-entry entry-type))))
 
 (defun company-bibtex-get-annotation (candidate)
   "Get annotation from CANDIDATE."
   (let ((prefix-length 0))
     (replace-regexp-in-string "{\\|}" ""
-			      (format " | %s"
-				      (get-text-property prefix-length :author candidate)))))
+                              (format " | %s"
+                                      (get-text-property prefix-length :author candidate)))))
 
 (defun company-bibtex-get-metadata (candidate)
   "Get metadata from CANDIDATE."
   (let ((prefix-length 0))
     (replace-regexp-in-string "{\\|}" ""
-			      (format "%s"
-				      (get-text-property prefix-length :title candidate)))))
+                              (format "%s"
+                                      (get-text-property prefix-length :title candidate)))))
 
 ;;;###autoload
 (defun company-bibtex (command &optional arg &rest ignored)
@@ -159,24 +188,31 @@ COMMAND, ARG, and IGNORED are used by `company-mode'."
   (interactive (list 'interactive))
   (cl-case command
     (interactive (company-begin-backend 'company-bibtex))
-    (prefix (cond ((derived-mode-p 'latex-mode)
-		   (company-grab (format "%s\\(%s,\\)*\\(%s\\)"
-					 company-bibtex-latex-citation-regex
-					 company-bibtex-key-regex
-					 company-bibtex-key-regex)
-				 2))
-		  ((derived-mode-p 'org-mode)
-		   (company-grab (format "%s\\(%s,\\)*\\(%s\\)"
-					 company-bibtex-org-citation-regex
-					 company-bibtex-key-regex
-					 company-bibtex-key-regex)
-				 2))
-		  ((derived-mode-p 'markdown-mode)
-		   (company-grab (format "%s\\(%s\\)"
-					 company-bibtex-pandoc-citation-regex
-					 company-bibtex-key-regex)
-				 1))
-		  ))
+    (prefix
+     (cond
+      ((derived-mode-p 'latex-mode)
+       (company-grab
+        (format
+         "%s\\(%s,\\)*\\(%s\\)"
+         company-bibtex-latex-citation-regex
+         company-bibtex-key-regex
+         company-bibtex-key-regex)
+        2))
+      ((derived-mode-p 'org-mode)
+       (company-grab
+        (format
+         "%s\\(%s,\\)*\\(%s\\)"
+         company-bibtex-org-citation-regex
+         company-bibtex-key-regex
+         company-bibtex-key-regex)
+        2))
+      ((derived-mode-p 'markdown-mode)
+       (company-grab
+        (format
+         "%s\\(%s\\)"
+         company-bibtex-pandoc-citation-regex
+         company-bibtex-key-regex)
+        1))))
     (candidates
      (cl-remove-if-not
       (lambda (c) (string-prefix-p arg c))
