@@ -64,14 +64,38 @@
 (require 'parsebib)
 (require 'regexp-opt)
 
+(declare-function 'projectile-acquire-root "projectile.el")
+
 (defgroup company-bibtex nil
   "Company backend for BibTeX bibliography keys."
   :group 'company)
+
+(defcustom company-bibtex-default-bibliography
+  '("main.bib" "bibliography.bib" "sample.bib" "references.bib")
+  "List of bibtex files used for gathering completions by default.
+
+Each filename is the name relative to project root.  Project root detected using
+`projectile-acquire-root'"
+  :group 'company-bibtex
+  :type '(choice (file :must-match t) (repeat (file :must-match t))))
 
 (defcustom company-bibtex-bibliography nil
   "List of bibtex files used for gathering completions."
   :group 'company-bibtex
   :type '(choice (file :must-match t) (repeat (file :must-match t))))
+
+(defun company-bibtex-bibliography ()
+  "Return list of the bibTeX files used for completion."
+  (or company-bibtex-bibliography
+      (let ((root
+             (if (bound-and-true-p projectile-mode)
+                 (projectile-acquire-root)
+               "")))
+        (cl-remove-if-not
+         'file-exists-p
+         (mapcar
+          (lambda (it) (concat root it))
+          company-bibtex-default-bibliography)))))
 
 (defcustom company-bibtex-key-regex "[[:alnum:]_-]*"
   "Regex matching bibtex key names, excluding mode-specific prefixes."
@@ -92,9 +116,9 @@
   "Parse .bib file for candidates and return list of keys.
 Prepend the appropriate part of PREFIX to each item."
   (let ((bib-paths
-         (if (listp company-bibtex-bibliography)
-             company-bibtex-bibliography
-           (list company-bibtex-bibliography))))
+         (if (listp (company-bibtex-bibliography))
+             (company-bibtex-bibliography)
+           (list (company-bibtex-bibliography)))))
     (with-temp-buffer
       (mapc #'insert-file-contents bib-paths)
       (mapcar
